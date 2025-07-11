@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, CheckCircle, Home, Award, TrendingUp, Users, Target, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle, Home, Award, TrendingUp, Users, Target, Sparkles, Download, Calendar, FileText, ChevronLeft } from 'lucide-react';
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -43,6 +43,9 @@ const ValuationAssessment: React.FC<ValuationAssessmentProps> = ({ onComplete })
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questionnaire, setQuestionnaire] = useState<any>({});
   const [results, setResults] = useState<any>(null);
+  const [showDevelopmentPlan, setShowDevelopmentPlan] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   const questionData: Record<string, QuestionData[]> = {
     identidade: [
@@ -222,6 +225,76 @@ const ValuationAssessment: React.FC<ValuationAssessmentProps> = ({ onComplete })
     currentQuestionNumber += currentQuestion + 1;
     
     return (currentQuestionNumber / totalQuestions) * 100;
+  };
+
+  // Function to download report as PDF
+  const downloadReport = () => {
+    setDownloadingReport(true);
+    
+    // Simulate PDF generation
+    setTimeout(() => {
+      // Create a simple text report
+      const reportContent = `
+FLOW INTANGIBLE VALUATION™ - RELATÓRIO COMPLETO
+================================================
+
+Data: ${new Date().toLocaleDateString('pt-BR')}
+Nome: ${results.clientName || 'Cliente'}
+
+RESUMO EXECUTIVO
+----------------
+Nível de Maturidade: ${results.maturityLevel}
+Score Geral: ${(results.overallScore * 25).toFixed(0)}%
+
+VALORAÇÃO FINANCEIRA
+--------------------
+Valor Total de Mercado: R$ ${results.financialValuation.total.toLocaleString('pt-BR')}
+- Marca Pessoal: R$ ${results.financialValuation.marcaPessoal.toLocaleString('pt-BR')}
+- Conteúdo/Criações: R$ ${results.financialValuation.conteudoCriacoes.toLocaleString('pt-BR')}
+- Metodologias: R$ ${results.financialValuation.metodologias.toLocaleString('pt-BR')}
+
+Valor/Hora Sugerido: R$ ${results.financialValuation.valorHora}
+
+ANÁLISE POR PILAR
+-----------------
+Identidade: ${(results.pillarScores.identidade * 25).toFixed(0)}%
+Influência: ${(results.pillarScores.influencia * 25).toFixed(0)}%
+Legado: ${(results.pillarScores.legado * 25).toFixed(0)}%
+
+PRÓXIMOS PASSOS
+---------------
+1. Agendar sessão de desenvolvimento personalizado
+2. Implementar plano de ação baseado nos resultados
+3. Acompanhar evolução trimestral
+
+================================================
+Flow Method™ - Desenvolvido por Tami Saito
+      `;
+
+      // Create blob and download
+      const blob = new Blob([reportContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Flow_Valuation_Report_${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      setDownloadingReport(false);
+      alert('Relatório baixado com sucesso! Verifique sua pasta de downloads.');
+    }, 2000);
+  };
+
+  // Function to show development plan
+  const showDevelopmentPlanModal = () => {
+    setShowDevelopmentPlan(true);
+  };
+
+  // Function to schedule session
+  const scheduleSession = () => {
+    setShowScheduleModal(true);
   };
 
   // Render different pages based on current step
@@ -447,7 +520,7 @@ const ValuationAssessment: React.FC<ValuationAssessmentProps> = ({ onComplete })
           pointLabels: {
             font: {
               size: 14,
-              weight: 'bold'
+              weight: 'bold' as const
             }
           }
         }
@@ -605,11 +678,28 @@ const ValuationAssessment: React.FC<ValuationAssessmentProps> = ({ onComplete })
                 </button>
                 
                 <button
-                  onClick={() => window.location.href = '/platform'}
+                  onClick={downloadReport}
+                  disabled={downloadingReport}
+                  className="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-5 h-5" />
+                  {downloadingReport ? 'Gerando...' : 'Baixar Relatório'}
+                </button>
+                
+                <button
+                  onClick={showDevelopmentPlanModal}
+                  className="px-8 py-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <FileText className="w-5 h-5" />
+                  Plano Personalizado
+                </button>
+                
+                <button
+                  onClick={scheduleSession}
                   className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
-                  <Sparkles className="w-5 h-5" />
-                  Acessar Plataforma Completa
+                  <Calendar className="w-5 h-5" />
+                  Agendar Sessão
                 </button>
               </div>
             </div>
@@ -619,6 +709,207 @@ const ValuationAssessment: React.FC<ValuationAssessmentProps> = ({ onComplete })
             <p>© 2025 Flow Method™ - Desenvolvido por Tami Saito</p>
           </div>
         </div>
+        
+        {/* Development Plan Modal */}
+        {showDevelopmentPlan && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Plano de Desenvolvimento Personalizado
+                  </h2>
+                  <button
+                    onClick={() => setShowDevelopmentPlan(false)}
+                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="bg-purple-50 p-6 rounded-xl">
+                    <h3 className="font-semibold text-purple-900 mb-3">
+                      Baseado em sua avaliação:
+                    </h3>
+                    <p className="text-purple-700">
+                      Você está no nível <strong>{results.maturityLevel}</strong> com um score de {(results.overallScore * 25).toFixed(0)}%.
+                      Seu maior potencial está em desenvolver o pilar {
+                        results.pillarScores.legado < results.pillarScores.influencia && 
+                        results.pillarScores.legado < results.pillarScores.identidade ? 'Legado' :
+                        results.pillarScores.influencia < results.pillarScores.identidade ? 'Influência' : 'Identidade'
+                      }.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-4">
+                      Recomendações Prioritárias:
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-purple-600 font-bold">1</span>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">Framework Identity Matrix™</h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Aprofunde seu autoconhecimento e alinhe valores com propósito
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-blue-600 font-bold">2</span>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">Strategic Networking Map™</h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Construa uma rede estratégica de relacionamentos de alto valor
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-600 font-bold">3</span>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">Legacy Blueprint™</h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Desenvolva metodologias próprias e crie impacto escalável
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-6 rounded-xl">
+                    <h3 className="font-semibold text-gray-900 mb-3">
+                      Cronograma Sugerido:
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Mês 1-2:</span>
+                        <span className="font-medium">Consolidação da Identidade</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Mês 3-4:</span>
+                        <span className="font-medium">Expansão da Influência</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Mês 5-6:</span>
+                        <span className="font-medium">Construção do Legado</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setShowDevelopmentPlan(false);
+                      setShowScheduleModal(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
+                  >
+                    Agendar Sessão de Planejamento
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Schedule Session Modal */}
+        {showScheduleModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Agendar Sessão
+                  </h2>
+                  <button
+                    onClick={() => setShowScheduleModal(false)}
+                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <Calendar className="w-16 h-16 text-purple-600 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-6">
+                      Agende uma sessão personalizada para discutir seus resultados e criar um plano de ação específico.
+                    </p>
+                  </div>
+                  
+                  <form className="space-y-4" onSubmit={(e) => {
+                    e.preventDefault();
+                    alert('Agendamento realizado com sucesso! Você receberá um e-mail de confirmação em breve.');
+                    setShowScheduleModal(false);
+                  }}>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nome Completo
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        E-mail
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Telefone
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Preferência de Horário
+                      </label>
+                      <select
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="">Selecione...</option>
+                        <option value="manha">Manhã (9h-12h)</option>
+                        <option value="tarde">Tarde (14h-18h)</option>
+                        <option value="noite">Noite (19h-21h)</option>
+                      </select>
+                    </div>
+                    
+                    <button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
+                    >
+                      Confirmar Agendamento
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
