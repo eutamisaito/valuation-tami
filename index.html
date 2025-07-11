@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flow Intangible Valuation™ - powered by Tami Saito</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -25,6 +25,7 @@
             border-radius: 1rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
+            overflow: hidden;
         }
         
         .card:hover {
@@ -41,6 +42,8 @@
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
         }
         
         .btn-primary:hover {
@@ -57,6 +60,8 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
         }
         
         .btn-secondary:hover {
@@ -130,13 +135,69 @@
             .grid-cols-3 { grid-template-columns: 1fr; }
             .grid-cols-5 { grid-template-columns: repeat(2, 1fr); }
         }
+
+        /* Loading animation */
+        .loading-spinner {
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Chart container fixes */
+        #resultsChart {
+            max-width: 100%;
+            max-height: 400px;
+            width: 100% !important;
+            height: 400px !important;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            max-width: 100% !important;
+            max-height: 400px !important;
+        }
+
+        /* Acessibilidade */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus styles para acessibilidade */
+        button:focus,
+        input:focus,
+        textarea:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .scale-option:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(124, 14, 248, 0.2);
+        }
     </style>
 </head>
 <body class="bg-gray-50">
     <!-- Loading Screen -->
     <div id="loading" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div class="text-center">
-            <div class="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mb-4 mx-auto">
+            <div class="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mb-4 mx-auto loading-spinner">
                 <i class="fas fa-brain text-white text-2xl"></i>
             </div>
             <h2 class="text-2xl font-bold text-gray-900 mb-2">Flow Method</h2>
@@ -159,7 +220,9 @@
                             <p class="text-sm text-gray-600 font-medium">powered by Tami Saito</p>
                         </div>
                     </div>
-                    <button onclick="startQuestionnaire()" class="btn-primary">
+                    <button onclick="startQuestionnaire()" 
+                            class="btn-primary"
+                            aria-label="Começar diagnóstico Flow Method">
                         Começar Diagnóstico
                     </button>
                 </div>
@@ -193,11 +256,15 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-6">
-                    <button onclick="startQuestionnaire()" class="btn-primary flex items-center justify-center">
-                        <i class="fas fa-play mr-3"></i>
+                    <button onclick="startQuestionnaire()" 
+                            class="btn-primary flex items-center justify-center"
+                            aria-label="Iniciar avaliação gratuita do Flow Method">
+                        <i class="fas fa-play mr-3" aria-hidden="true"></i>
                         Iniciar Avaliação Gratuita
                     </button>
-                    <button class="btn-secondary">
+                    <button onclick="showDemo()" 
+                            class="btn-secondary"
+                            aria-label="Ver demonstração do sistema">
                         Ver Demo
                     </button>
                 </div>
@@ -404,18 +471,23 @@
                     
                     <!-- Text Input -->
                     <div class="mb-10">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <label for="text-answer" class="block text-sm font-medium text-gray-700 mb-3">
                             Sua resposta (seja específico e use exemplos concretos):
                         </label>
                         <textarea
                             id="text-answer"
+                            name="text-answer"
                             class="w-full p-4 border-2 border-gray-200 rounded-xl resize-none h-40 focus:border-purple-500 focus:ring-0 transition-colors"
                             placeholder="Descreva sua resposta aqui com exemplos específicos..."
+                            aria-describedby="text-answer-help"
                         ></textarea>
+                        <div id="text-answer-help" class="sr-only">
+                            Campo para resposta descritiva da questão atual
+                        </div>
                     </div>
 
                     <!-- Scale Question -->
-                    <div class="mb-10">
+                    <div class="mb-10" role="radiogroup" aria-labelledby="scale-question">
                         <h4 id="scale-question" class="text-xl font-bold text-gray-900 mb-6">
                             Quão claro e articulado seu propósito está para você hoje?
                         </h4>
@@ -426,12 +498,18 @@
 
                     <!-- Navigation -->
                     <div class="flex justify-between items-center pt-6 border-t border-gray-200">
-                        <button onclick="goHome()" class="text-gray-600 hover:text-gray-800 font-medium">
+                        <button onclick="goHome()" 
+                                class="text-gray-600 hover:text-gray-800 font-medium"
+                                aria-label="Voltar à página inicial">
                             ← Voltar ao Início
                         </button>
-                        <button id="next-btn" onclick="nextQuestion()" disabled class="btn-primary opacity-50 cursor-not-allowed">
+                        <button id="next-btn" 
+                                onclick="nextQuestion()" 
+                                disabled 
+                                class="btn-primary opacity-50 cursor-not-allowed"
+                                aria-label="Ir para próxima questão">
                             Próxima Questão
-                            <i class="fas fa-arrow-right ml-2"></i>
+                            <i class="fas fa-arrow-right ml-2" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
@@ -561,7 +639,9 @@
                 <!-- Chart Container -->
                 <div class="card p-6 mb-8">
                     <h3 class="text-xl font-bold text-gray-900 mb-4">Evolução dos Seus Pilares</h3>
-                    <canvas id="resultsChart" width="400" height="200"></canvas>
+                    <div class="chart-container">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
                 </div>
 
                 <!-- Purpose Connection -->
@@ -572,14 +652,19 @@
                     </h3>
                     <div class="grid lg:grid-cols-2 gap-8">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-3">
+                            <label for="purpose-text" class="block text-sm font-medium text-gray-700 mb-3">
                                 Defina ou refine seu propósito pessoal:
                             </label>
                             <textarea
                                 id="purpose-text"
+                                name="purpose-text"
                                 class="w-full p-4 border-2 border-gray-200 rounded-xl resize-none h-32 focus:border-purple-500 focus:ring-0"
                                 placeholder="Meu propósito é..."
+                                aria-describedby="purpose-help"
                             ></textarea>
+                            <div id="purpose-help" class="sr-only">
+                                Campo para definir ou refinar seu propósito pessoal baseado nos resultados
+                            </div>
                         </div>
                         <div class="bg-purple-50 p-6 rounded-xl">
                             <h4 class="font-bold text-purple-900 mb-3">Reflexão Estratégica</h4>
@@ -599,15 +684,15 @@
                 <div class="card p-8">
                     <h3 class="text-2xl font-bold text-gray-900 mb-6">Próximos Passos</h3>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <button class="btn-primary flex flex-col items-center space-y-2 py-6">
+                        <button onclick="downloadReport()" class="btn-primary flex flex-col items-center space-y-2 py-6">
                             <i class="fas fa-download text-2xl"></i>
                             <span class="font-semibold">Relatório PDF</span>
                         </button>
-                        <button class="btn-secondary flex flex-col items-center space-y-2 py-6">
+                        <button onclick="showDevelopmentPlan()" class="btn-secondary flex flex-col items-center space-y-2 py-6">
                             <i class="fas fa-chart-bar text-2xl"></i>
                             <span class="font-semibold">Plano de Desenvolvimento</span>
                         </button>
-                        <button class="btn-secondary flex flex-col items-center space-y-2 py-6">
+                        <button onclick="scheduleSession()" class="btn-secondary flex flex-col items-center space-y-2 py-6">
                             <i class="fas fa-calendar text-2xl"></i>
                             <span class="font-semibold">Agendar Sessão</span>
                         </button>
@@ -628,14 +713,17 @@
         let currentQuestion = 0;
         let questionnaire = {};
         let results = null;
+        let currentChart = null;
+        let chartCreated = false;
 
-        // Question Data
+        // Question Data - SISTEMA COMPLETO E VALIDADO
         const questionData = {
             identidade: [
                 {
                     id: 'proposito_definicao',
                     category: 'Clareza de Propósito e Valores',
                     subcategory: 'Definição e Articulação do Propósito Pessoal',
+                    weight: 20,
                     question: 'Descreva em suas palavras o seu propósito de vida/carreira. O que te move fundamentalmente?',
                     scaleQuestion: 'Quão claro e articulado seu propósito está para você hoje?',
                     options: [
@@ -649,6 +737,7 @@
                     id: 'valores_alinhamento',
                     category: 'Clareza de Propósito e Valores',
                     subcategory: 'Alinhamento entre Valores e Ações',
+                    weight: 15,
                     question: 'Quais são os 3-5 valores fundamentais que guiam sua vida pessoal e profissional?',
                     scaleQuestion: 'Em que medida suas principais decisões e atividades diárias (últimos 6 meses) refletiram esses valores fundamentais?',
                     options: [
@@ -662,6 +751,7 @@
                     id: 'pontos_fortes',
                     category: 'Autoconhecimento Estratégico',
                     subcategory: 'Consciência de Pontos Fortes e Talentos Únicos',
+                    weight: 15,
                     question: 'Quais são seus 3 maiores pontos fortes ou talentos únicos? Como eles se manifestam em sua vida profissional?',
                     scaleQuestion: 'Quão consciente você está de seus pontos fortes e como utilizá-los estrategicamente?',
                     options: [
@@ -677,6 +767,7 @@
                     id: 'marca_pessoal',
                     category: 'Marca Pessoal e Reputação',
                     subcategory: 'Autenticidade e Coerência da Marca Pessoal',
+                    weight: 15,
                     question: 'Como você descreveria a percepção que acredita que os outros têm sobre você profissionalmente?',
                     scaleQuestion: 'Quão consistente você se considera na comunicação da sua marca pessoal em diferentes plataformas?',
                     options: [
@@ -690,6 +781,7 @@
                     id: 'comunicacao',
                     category: 'Comunicação e Narrativa',
                     subcategory: 'Clareza e Impacto na Comunicação',
+                    weight: 10,
                     question: 'Descreva uma situação recente onde você precisou comunicar uma ideia complexa. Como foi sua abordagem?',
                     scaleQuestion: 'Como você avalia sua clareza ao comunicar ideias complexas?',
                     options: [
@@ -698,6 +790,20 @@
                         { value: 3, label: 'Estratégico - Geralmente consigo comunicar com clareza e impacto' },
                         { value: 4, label: 'Exponencial - Sou reconhecido pela clareza e impacto da minha comunicação' }
                     ]
+                },
+                {
+                    id: 'rede_relacionamentos',
+                    category: 'Comunicação e Narrativa',
+                    subcategory: 'Rede de Relacionamentos Estratégicos',
+                    weight: 10,
+                    question: 'Descreva a qualidade e diversidade da sua rede de relacionamentos profissionais. Como você cultiva essas conexões?',
+                    scaleQuestion: 'Qual é a força e relevância estratégica da sua rede de relacionamentos para seus objetivos?',
+                    options: [
+                        { value: 1, label: 'Emergente - Rede limitada, principalmente colegas próximos' },
+                        { value: 2, label: 'Desenvolvido - Rede razoável, mas pouco estratégica' },
+                        { value: 3, label: 'Estratégico - Rede diversa e bem cultivada, com conexões relevantes' },
+                        { value: 4, label: 'Exponencial - Rede ampla, estratégica e mutuamente benéfica em diferentes setores' }
+                    ]
                 }
             ],
             legado: [
@@ -705,6 +811,7 @@
                     id: 'lideranca',
                     category: 'Liderança e Impacto em Pessoas',
                     subcategory: 'Capacidade de Inspirar e Motivar Outros',
+                    weight: 5,
                     question: 'Descreva uma situação em que você inspirou ou motivou uma equipe ou indivíduo a alcançar um resultado significativo.',
                     scaleQuestion: 'De que forma você investe ativamente no desenvolvimento de outras pessoas?',
                     options: [
@@ -713,9 +820,74 @@
                         { value: 3, label: 'Proativo - Busco ativamente oportunidades de desenvolver outros' },
                         { value: 4, label: 'Estratégico - Tenho um sistema estruturado para desenvolver talentos' }
                     ]
+                },
+                {
+                    id: 'pensamento_estrategico',
+                    category: 'Liderança e Impacto em Pessoas',
+                    subcategory: 'Visão de Longo Prazo e Pensamento Sistêmico',
+                    weight: 5,
+                    question: 'Como você aborda a criação de estratégias de longo prazo? Descreva um exemplo de decisão estratégica que teve impacto duradouro.',
+                    scaleQuestion: 'Qual é sua capacidade de pensar sistemicamente e antecipar tendências?',
+                    options: [
+                        { value: 1, label: 'Emergente - Foco principalmente no curto prazo' },
+                        { value: 2, label: 'Desenvolvido - Considero o longo prazo, mas nem sempre de forma sistemática' },
+                        { value: 3, label: 'Estratégico - Tenho visão clara de longo prazo e penso sistemicamente' },
+                        { value: 4, label: 'Exponencial - Antecipo tendências e crio estratégias inovadoras de impacto duradouro' }
+                    ]
+                },
+                {
+                    id: 'multiplicacao_escalabilidade',
+                    category: 'Liderança e Impacto em Pessoas',
+                    subcategory: 'Capacidade de Multiplicar Impacto e Escalar Soluções',
+                    weight: 5,
+                    question: 'Descreva como você transforma suas ideias ou soluções em algo que pode impactar mais pessoas ou organizações.',
+                    scaleQuestion: 'Qual é sua capacidade de criar sistemas, processos ou metodologias que multiplicam seu impacto?',
+                    options: [
+                        { value: 1, label: 'Emergente - Impacto principalmente individual ou em pequena escala' },
+                        { value: 2, label: 'Desenvolvido - Algumas experiências de multiplicação com orientação' },
+                        { value: 3, label: 'Estratégico - Consigo sistematizar e replicar soluções efetivamente' },
+                        { value: 4, label: 'Exponencial - Crio sistemas e metodologias que geram impacto exponencial' }
+                    ]
                 }
             ]
         };
+
+        // SISTEMA DE VALIDAÇÃO DOS DADOS
+        function validateQuestionData() {
+            let totalWeight = 0;
+            let pillarWeights = { identidade: 0, influencia: 0, legado: 0 };
+            const expectedWeights = { identidade: 50, influencia: 35, legado: 15 };
+            
+            console.log("=== VALIDAÇÃO DO SISTEMA ===");
+            
+            Object.keys(questionData).forEach(pillar => {
+                questionData[pillar].forEach(question => {
+                    if (!question.weight) {
+                        console.error(`❌ Questão ${question.id} sem peso definido!`);
+                        return;
+                    }
+                    totalWeight += question.weight;
+                    pillarWeights[pillar] += question.weight;
+                });
+            });
+            
+            // Verificar pesos dos pilares
+            Object.keys(expectedWeights).forEach(pillar => {
+                if (pillarWeights[pillar] !== expectedWeights[pillar]) {
+                    console.error(`❌ ${pillar}: ${pillarWeights[pillar]}% (esperado: ${expectedWeights[pillar]}%)`);
+                } else {
+                    console.log(`✅ ${pillar}: ${pillarWeights[pillar]}%`);
+                }
+            });
+            
+            if (totalWeight !== 100) {
+                console.error(`❌ Peso total: ${totalWeight}% (esperado: 100%)`);
+            } else {
+                console.log(`✅ Peso total: ${totalWeight}%`);
+            }
+            
+            return { isValid: totalWeight === 100, pillarWeights, totalWeight };
+        }
 
         const pillarData = {
             identidade: {
@@ -754,9 +926,18 @@
         function showPage(pageId) {
             const pages = ['landing-page', 'questionnaire-page', 'results-page'];
             pages.forEach(page => {
-                document.getElementById(page).classList.add('hidden');
+                const pageElement = document.getElementById(page);
+                pageElement.classList.add('hidden');
+                pageElement.classList.remove('active');
             });
             document.getElementById(pageId).classList.remove('hidden');
+            
+            // Limpar gráfico quando sair da página de resultados
+            if (pageId !== 'results-page' && currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+                chartCreated = false;
+            }
         }
 
         function startQuestionnaire() {
@@ -770,6 +951,22 @@
         function goHome() {
             currentStep = 'landing';
             showPage('landing-page');
+        }
+
+        function showDemo() {
+            alert('Demo em desenvolvimento. Em breve teremos uma versão demonstrativa completa!');
+        }
+
+        function downloadReport() {
+            alert('Funcionalidade de download do relatório em desenvolvimento.');
+        }
+
+        function showDevelopmentPlan() {
+            alert('Plano de desenvolvimento personalizado em breve!');
+        }
+
+        function scheduleSession() {
+            alert('Sistema de agendamento em desenvolvimento.');
         }
 
         function updateQuestionDisplay() {
@@ -813,13 +1010,19 @@
             
             question.options.forEach((option, index) => {
                 const optionDiv = document.createElement('div');
+                const radioId = `scale-${currentPillar}-${currentQuestion}-${index}`;
                 optionDiv.className = 'scale-option';
                 optionDiv.innerHTML = `
-                    <label class="flex items-start space-x-4 cursor-pointer">
-                        <input type="radio" name="scale" value="${option.value}" class="mt-1 text-purple-600">
+                    <label for="${radioId}" class="flex items-start space-x-4 cursor-pointer">
+                        <input type="radio" 
+                               id="${radioId}"
+                               name="scale" 
+                               value="${option.value}" 
+                               class="mt-1 text-purple-600"
+                               aria-describedby="${radioId}-desc">
                         <div class="flex-1">
                             <div class="font-semibold text-gray-900 mb-1">Nível ${option.value}</div>
-                            <div class="text-gray-700">${option.label}</div>
+                            <div id="${radioId}-desc" class="text-gray-700">${option.label}</div>
                         </div>
                     </label>
                 `;
@@ -887,51 +1090,100 @@
         }
 
         function calculateResults() {
-            const pillarScores = {};
-            let totalScore = 0;
-            let totalQuestions = 0;
+            // Validar dados antes do cálculo
+            const validation = validateQuestionData();
+            if (!validation.isValid) {
+                console.error("❌ Erro na validação dos dados!");
+                return;
+            }
             
+            const pillarScores = {};
+            let weightedTotalScore = 0;
+            let totalWeight = 0;
+            
+            // Calcular scores por pilar usando pesos das questões
             Object.keys(questionnaire).forEach(pillar => {
                 const questions = questionnaire[pillar];
-                let pillarScore = 0;
-                let pillarQuestionCount = 0;
+                let weightedPillarScore = 0;
+                let pillarTotalWeight = 0;
                 
-                Object.values(questions).forEach(answer => {
-                    if (answer.scale) {
-                        pillarScore += answer.scale;
-                        pillarQuestionCount++;
-                        totalScore += answer.scale;
-                        totalQuestions++;
+                Object.keys(questions).forEach(questionId => {
+                    const answer = questions[questionId];
+                    const questionConfig = questionData[pillar].find(q => q.id === questionId);
+                    
+                    if (answer.scale && questionConfig?.weight) {
+                        const questionWeight = questionConfig.weight;
+                        weightedPillarScore += (answer.scale * questionWeight);
+                        pillarTotalWeight += questionWeight;
+                        
+                        weightedTotalScore += (answer.scale * questionWeight);
+                        totalWeight += questionWeight;
                     }
                 });
                 
-                pillarScores[pillar] = pillarQuestionCount > 0 ? (pillarScore / pillarQuestionCount) : 0;
+                // Score do pilar (média ponderada normalizada para escala 1-4)
+                pillarScores[pillar] = pillarTotalWeight > 0 ? (weightedPillarScore / pillarTotalWeight) : 0;
             });
             
-            const overallScore = totalQuestions > 0 ? (totalScore / totalQuestions) : 0;
+            // Score geral (média ponderada de todas as questões)
+            const overallScore = totalWeight > 0 ? (weightedTotalScore / totalWeight) : 0;
             
-            // Calculate financial valuation
+            // Cálculos financeiros baseados na metodologia Tami Saito
             const financialValuation = {
+                // Marca Pessoal: baseada na Influência (RRM - Relief Royalty Method)
                 marcaPessoal: Math.round((pillarScores.influencia || 0) * 125000),
+                
+                // Conteúdo/Criações: baseada na Identidade (propriedade intelectual)
                 conteudoCriacoes: Math.round((pillarScores.identidade || 0) * 75000),
+                
+                // Metodologias: baseada no Legado (MPEEM - Multi-Period Excess Earnings Method)
                 metodologias: Math.round((pillarScores.legado || 0) * 100000),
+                
+                // Valor/Hora sugerido baseado no score geral
                 valorHora: Math.round((overallScore * 500) + 200)
             };
             
             financialValuation.total = financialValuation.marcaPessoal + financialValuation.conteudoCriacoes + financialValuation.metodologias;
             
+            // Determinar nível de maturidade
+            let maturityLevel;
+            if (overallScore >= 3.5) maturityLevel = 'Exponencial';
+            else if (overallScore >= 2.5) maturityLevel = 'Estratégico';
+            else if (overallScore >= 1.5) maturityLevel = 'Desenvolvido';
+            else maturityLevel = 'Emergente';
+            
             results = {
                 pillarScores,
                 overallScore,
                 financialValuation,
-                maturityLevel: overallScore >= 3.5 ? 'Exponencial' : 
-                              overallScore >= 2.5 ? 'Estratégico' :
-                              overallScore >= 1.5 ? 'Desenvolvido' : 'Emergente'
+                maturityLevel,
+                validation: validation,
+                debugInfo: {
+                    weightedTotalScore,
+                    totalWeight,
+                    calculationMethod: 'Flow Method™ - Weighted Average by Question Weight'
+                }
             };
+            
+            // Log para auditoria
+            console.log("=== CÁLCULO FINALIZADO ===");
+            console.log("Scores por pilar:", pillarScores);
+            console.log("Score geral:", overallScore.toFixed(2));
+            console.log("Nível de maturidade:", maturityLevel);
+            console.log("Valoração financeira total:", financialValuation.total.toLocaleString('pt-BR'));
         }
 
         function showResults() {
+            // Prevenir múltiplas execuções
+            if (document.getElementById('results-page').classList.contains('active')) {
+                return;
+            }
+            
             showPage('results-page');
+            document.getElementById('results-page').classList.add('active');
+            
+            // Reset da flag do gráfico
+            chartCreated = false;
             
             // Update financial values
             document.getElementById('total-value').textContent = `R$ ${results.financialValuation.total.toLocaleString()}`;
@@ -956,65 +1208,121 @@
             document.getElementById('influence-progress').style.width = `${influenceScore}%`;
             document.getElementById('legacy-progress').style.width = `${legacyScore}%`;
             
-            // Create chart
-            createResultsChart();
+            // Criar gráfico apenas uma vez, com delay para garantir que o DOM esteja pronto
+            setTimeout(() => {
+                createResultsChart();
+            }, 300);
         }
 
         function createResultsChart() {
-            const ctx = document.getElementById('resultsChart').getContext('2d');
+            // Prevenir criação múltipla
+            if (chartCreated) {
+                return;
+            }
+
+            const canvas = document.getElementById('resultsChart');
             
-            new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: ['Identidade', 'Influência', 'Legado'],
-                    datasets: [{
-                        label: 'Seu Perfil',
-                        data: [
-                            (results.pillarScores.identidade || 0) * 25,
-                            (results.pillarScores.influencia || 0) * 25,
-                            (results.pillarScores.legado || 0) * 25
-                        ],
-                        backgroundColor: 'rgba(124, 14, 248, 0.2)',
-                        borderColor: 'rgba(124, 14, 248, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: 'rgba(124, 14, 248, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(124, 14, 248, 1)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        r: {
-                            angleLines: {
-                                display: true
-                            },
-                            suggestedMin: 0,
-                            suggestedMax: 100
-                        }
+            // Verificar se o canvas existe e está visível
+            if (!canvas || canvas.offsetParent === null) {
+                console.log("Canvas não encontrado ou não visível");
+                return;
+            }
+            
+            // Destruir gráfico existente se houver
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+            
+            try {
+                // Criar novo gráfico
+                currentChart = new Chart(canvas.getContext('2d'), {
+                    type: 'radar',
+                    data: {
+                        labels: ['Identidade', 'Influência', 'Legado'],
+                        datasets: [{
+                            label: 'Seu Perfil',
+                            data: [
+                                (results.pillarScores.identidade || 0) * 25,
+                                (results.pillarScores.influencia || 0) * 25,
+                                (results.pillarScores.legado || 0) * 25
+                            ],
+                            backgroundColor: 'rgba(124, 14, 248, 0.2)',
+                            borderColor: 'rgba(124, 14, 248, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(124, 14, 248, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(124, 14, 248, 1)'
+                        }]
                     },
-                    plugins: {
-                        legend: {
-                            display: false
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    display: true
+                                },
+                                suggestedMin: 0,
+                                suggestedMax: 100,
+                                ticks: {
+                                    stepSize: 25
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        animation: {
+                            duration: 1000
                         }
                     }
-                }
-            });
+                });
+                
+                chartCreated = true;
+                console.log("✅ Gráfico criado com sucesso");
+                
+            } catch (error) {
+                console.error("❌ Erro ao criar gráfico:", error);
+            }
         }
 
         function restart() {
+            // Limpar gráfico
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+            chartCreated = false;
+            
+            // Reset de todas as variáveis
             currentStep = 'landing';
             currentPillar = 'identidade';
             currentQuestion = 0;
             questionnaire = {};
             results = null;
+            
+            // Limpar classes active
+            document.getElementById('results-page').classList.remove('active');
+            
             showPage('landing-page');
         }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            // Validar sistema na inicialização
+            const validation = validateQuestionData();
+            
+            if (validation.isValid) {
+                console.log("✅ Sistema validado com sucesso!");
+                console.log("📊 Distribuição dos pilares:", validation.pillarWeights);
+            } else {
+                console.error("❌ Sistema com erros de configuração!");
+            }
+            
             hideLoading();
         });
     </script>
