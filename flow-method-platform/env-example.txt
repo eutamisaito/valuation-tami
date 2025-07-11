@@ -1,0 +1,16 @@
+# Flow Method Platform - Variáveis de Ambiente
+# Copie este arquivo para .env.local e preencha com seus valores
+
+# API Keys (futuras integrações)
+# REACT_APP_API_URL=https://api.flowmethod.com
+# REACT_APP_API_KEY=sua_chave_api_aqui
+
+# Analytics (opcional)
+# REACT_APP_GA_TRACKING_ID=UA-000000-01
+
+# Recursos (opcional)
+# REACT_APP_ENABLE_CHAT=true
+# REACT_APP_ENABLE_EXPORT=true
+
+# Ambiente
+# REACT_APP_ENV=production

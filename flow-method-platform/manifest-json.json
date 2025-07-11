@@ -1,0 +1,16 @@
+{
+  "short_name": "Flow Method",
+  "name": "Flow Method™ Platform",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#7c0def",
+  "background_color": "#ffffff",
+  "description": "Sistema integrado de avaliação e desenvolvimento baseado nos 3 pilares Flow"
+}
